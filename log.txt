@@ -31,3 +31,4 @@
 1699330268008 GET /api/users/1001 /api/users/1001
 1699330354892 GET /api/users/1001 /api/users/1001
 1699330356668 GET /api/users/1001 /api/users/1001
+1699333609347 DELETE /api/users/1010 /api/users/1010

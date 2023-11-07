@@ -6,20 +6,21 @@ const users = require("./MOCK_DATA.json");
 const PORT = 8000;
 
 //middleware
-
 app.use(express.urlencoded({ extended: false })); //middle ware to get the input body
 
-app.use((req,res,next)=>{
+app.use((req,res,next)=>{ 
   const log = `\n${Date.now()} ${req.method} ${req.path} ${req.url}`;
   fs.appendFile("./log.txt",log,(err)=>{});
   next();
-});
+}); //middleware for log update
+
+
 
 app
   .route("/api/users")
   .get((req, res) => {
     console.log(`new ${req.method} request received`);
-    return res.send(users);
+    return res.status(200).send(users);
   })
   .post((req, res) => {
     console.log(`new ${req.method} request received`);
@@ -29,7 +30,7 @@ app
     console.log(body);
     fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err) => {
       console.log(`\n Data added sucessfully at id=${users.length}`);
-      return res.json({ status: "sucess" });
+      return res.status(201).json({ status: "sucess" });
     });
   });
 
@@ -44,10 +45,10 @@ app
     if (user) {
       console.log(user);
       console.log("status:sucess");
-      return res.json(user);
+      return res.status(200).json(user);
     } else {
       console.log("user not found");
-      return res.json({ status: "user not found" });
+      return res.status(404).json({ status: "user not found" });
     }
   })
   .put((req, res) => {
@@ -72,10 +73,10 @@ app
 
       console.log(body);
       console.log("satus:success");
-      return res.json({ status: "sucess" });
+      return res.status(200).json({ status: "sucess" });
     } else {
       console.log("user not found");
-      return res.json({ status: "user not found" });
+      return res.status(404).json({ status: "user not found" });
     }
   })
   .delete((req, res) => {
@@ -87,10 +88,10 @@ app
       for (var i = id - 1; i < users.length; i++) users[i].id--;
       fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), () => {});
       console.log(`user with ${id} successfully deleted`);
-      return res.json({ status: "sucess" });
+      return res.status(200).json({ status: "sucess" });
     } else {
       console.log("user not found");
-      return res.json({ status: "user not found" });
+      return res.status(404).json({ status: "user not found" });
     }
   });
 
