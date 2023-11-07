@@ -1,47 +1,93 @@
 const express = require("express");
 const fs = require("fs");
+const mongoose = require("mongoose");
+
 const app = express();
 
-const users = require("./MOCK_DATA.json");
+//connecting to database
+mongoose
+  .connect("mongodb://127.0.0.1:27017/youtube_app_2")
+  .then(() => console.log("database connected"))
+  .catch((err) => console.log(err));
+
+//defining schema
+const userSchema = new mongoose.Schema(
+  {
+    first_name: {
+      type: String,
+      required: true,
+    },
+    last_name: {
+      type: String,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+    },
+    job_title: {
+      type: String,
+      required: true,
+    },
+    gender: {
+      type: String,
+    },
+  },
+  { timestamps: true }
+);
+
+//defining model
+const User = mongoose.model("user", userSchema);
+
 const PORT = 8000;
 
 //middleware
 app.use(express.urlencoded({ extended: false })); //middle ware to get the input body
 
-app.use((req,res,next)=>{ 
+app.use((req, res, next) => {
   const log = `\n${Date.now()} ${req.method} ${req.path} ${req.url}`;
-  fs.appendFile("./log.txt",log,(err)=>{});
+  fs.appendFile("./log.txt", log, (err) => {});
   next();
 }); //middleware for log update
 
-
-
+//routes
 app
   .route("/api/users")
-  .get((req, res) => {
+  .get(async (req, res) => {
     console.log(`new ${req.method} request received`);
-    return res.status(200).send(users);
+
+    const allUsers = await User.find({});
+    console.log("status:success");
+    return res.status(200).send(allUsers);
   })
-  .post((req, res) => {
+  .post(async (req, res) => {
     console.log(`new ${req.method} request received`);
 
     const body = req.body;
-    users.push({ ...body, id: users.length + 1 });
-    console.log(body);
-    fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), (err) => {
-      console.log(`\n Data added sucessfully at id=${users.length}`);
-      return res.status(201).json({ status: "sucess" });
+    if (!body || !body.first_name || !body.email || !body.job_title) {
+      console.log("status:wrong data");
+      return res.status(401).json({ status: "unsuficiant data" });
+    }
+
+    const result = await User.create({
+      first_name: body.first_name,
+      last_name: body.last_name,
+      email: body.email,
+      gender: body.gender,
+      job_title: body.job_title,
     });
+    console.log(result);
+    console.log("status:success");
+    res.status(201).json({ status: "success" });
   });
 
+//
 app
   .route("/api/users/:id")
-  .get((req, res) => {
+  .get(async (req, res) => {
     console.log(`new ${req.method} request received`);
-    
 
-    const id = Number(req.params.id);
-    const user = users.find((user) => user.id === id);
+    const user = await User.findById(req.params.id);
     if (user) {
       console.log(user);
       console.log("status:sucess");
@@ -53,46 +99,27 @@ app
   })
   .put((req, res) => {
     console.log(`new ${req.method} request received`);
-    
+
     return res.json({ status: "pending" });
   })
-  .patch((req, res) => {
+  .patch(async(req, res) => {
     console.log(`new ${req.method} request received`);
-    
-
-    const id = Number(req.params.id);
     const body = req.body;
-
-    if (id < users.length) {
-      //updating the specific user
-      users[id - 1].first_name = body.first_name;
-      users[id - 1].last_name = body.last_name;
-      users[id - 1].email = body.email;
-      users[id - 1].gender = body.gender;
-      users[id - 1].job_title = body.job_title;
-
-      console.log(body);
-      console.log("satus:success");
-      return res.status(200).json({ status: "sucess" });
-    } else {
-      console.log("user not found");
-      return res.status(404).json({ status: "user not found" });
-    }
+    await User.findByIdAndUpdate(req.params.id,{
+      first_name:body.first_name,
+      last_name:body.last_name,
+      email:body.email,
+      job_title:body.job_title,
+      gender:body.gender,
+    });
+    console.log("status:success");
+    return res.status(200).json({status:"success"});
   })
-  .delete((req, res) => {
+  .delete(async(req, res) => {
     console.log(`new ${req.method} request received`);
-    const id = Number(req.params.id);
-    //deleting the specific user
-    if (id < users.length) {
-      users.splice(id - 1, 1);
-      for (var i = id - 1; i < users.length; i++) users[i].id--;
-      fs.writeFile("./MOCK_DATA.json", JSON.stringify(users), () => {});
-      console.log(`user with ${id} successfully deleted`);
-      return res.status(200).json({ status: "sucess" });
-    } else {
-      console.log("user not found");
-      return res.status(404).json({ status: "user not found" });
-    }
+    await User.findByIdAndDelete(req.params.id);
+    console.log("status:success");
+    return res.status(200).json({status:"success"});
   });
 
 app.listen(PORT, () => console.log("server connected"));
